@@ -23,7 +23,7 @@ Two responsibilities:
 
 import pandas as pd
 
-from co2_predictor.evaluation.metrics import evaluate_model  # noqa: F401 (re-exported for convenience)
+from co2_predictor.evaluation.metrics import evaluate_model
 
 
 def build_comparison_table(
@@ -33,7 +33,30 @@ def build_comparison_table(
 
     Moved from: Section 9.1-9.4 + Section 11.1's dict-assembly cells.
     """
-    raise NotImplementedError
+    try:
+        results = {}
+        for name, search in fitted_searches.items():
+            results[name] = evaluate_model(
+                model=search,
+                X=X_train, 
+                y=y_train, 
+                metrics=metrics
+            )
+
+            best_idx = search.best_index_
+
+            mean_cv_score = round(search.best_score_, 3)
+            std_cv = search.cv_results_['std_test_score'][best_idx]
+            rmse_gap = mean_cv_score - results[name]['RMSE'] 
+
+            results[name]['Std CV RMSE'] = std_cv
+            results[name]['Mean CV RMSE'] = mean_cv_score
+            results[name]['RMSE Gap'] = rmse_gap
+
+        return pd.DataFrame(results)
+    except Exception as e:
+        return e
+
 
 
 def select_final_model(comparison_table: pd.DataFrame) -> str:
@@ -45,4 +68,8 @@ def select_final_model(comparison_table: pd.DataFrame) -> str:
     defined (e.g. within 1 Std CV RMSE of the best) rather than
     leaving it implicit.
     """
-    raise NotImplementedError
+    compare = {}
+    weights = {
+     
+    }
+

@@ -19,7 +19,7 @@ so a full re-tune is opt-in, not the default.
 """
 
 from sklearn.model_selection import RandomizedSearchCV, RepeatedKFold
-
+from pipeline_factory import build_pipeline
 
 class HyperparameterTuner:
     """Wraps RandomizedSearchCV with this project's fixed CV strategy.
@@ -41,11 +41,45 @@ class HyperparameterTuner:
         so it's called once per entry in TUNED_MODEL_REGISTRY instead
         of being copy-pasted four times.
         """
-        raise NotImplementedError
+        try:
+            search = RandomizedSearchCV(
+                estimator=pipeline,
+                param_distributions=param_distributions,
+                n_iter=self.n_iter,
+                cv=self.cv,
+                scoring='neg_root_mean_squared_error',
+                random_state=self.random_state,
+                n_jobs=-1,
+                verbose=2
+            )
+
+            return search.fit(X=X, y=y)
+        
+        except Exception as e:
+            return e
 
     def search_all(self, *, registry: dict, preprocessor, X, y) -> dict:
         """Loop over the whole model registry, return {name: fitted_search}.
 
         This replaces Sections 8.1 through 8.4 in their entirety.
         """
-        raise NotImplementedError
+        try:
+            search_results = {}
+
+            for model_name, specs in registry.items():
+
+                pipeline = build_pipeline(
+                    preprocessor=preprocessor,
+                    model=specs['estimator'],
+                )
+                search_results[model_name] = self.search(
+                    pipeline=pipeline,
+                    param_distributions=specs['param_distributions'], 
+                    X=X,
+                    y=y
+                )
+
+            return search_results
+
+        except Exception as e:
+            return e

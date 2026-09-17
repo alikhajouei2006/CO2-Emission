@@ -35,21 +35,39 @@ class FeatureScope:
     """
 
     redundant_fuel_columns: tuple[str, ...] = field(default_factory=tuple)
-    # e.g. ('Fuel Consumption Comb (mpg)',)  -- Section 3.5.2
 
     high_cardinality_columns: tuple[str, ...] = field(default_factory=tuple)
-    # e.g. ('Model',)  -- Section 3.6.1
 
     inference_unavailable_columns: tuple[str, ...] = field(default_factory=tuple)
-    # the three Fuel Consumption columns -- Section 3.6.2 / 1.4
 
     def all_dropped_columns(self) -> tuple[str, ...]:
         """Union of every column this project excludes from modeling."""
-        raise NotImplementedError
+
+        self.redundant_fuel_columns = ('Fuel Consumption Comb (mpg)',)
+        self.high_cardinality_columns = ('Model',)
+        self.inference_unavailable_columns = (
+            'Fuel Consumption City (L/100 km)',
+            'Fuel Consumption Hwy (L/100 km)',
+            'Fuel Consumption Comb (L/100 km)'
+        )
+
+
+        return (
+            'Model',
+            'Fuel Consumption Comb (mpg)',
+            'Fuel Consumption City (L/100 km)',
+            'Fuel Consumption Hwy (L/100 km)',
+            'Fuel Consumption Comb (L/100 km)'
+        )
 
     def apply(self, df: pd.DataFrame) -> pd.DataFrame:
         """Drop all_dropped_columns() from df, if present.
 
         Moved from: Sections 3.5.2, 3.6.1, 3.6.2 drop() calls.
         """
-        raise NotImplementedError
+        
+        try:
+            cols_to_drop = self.all_dropped_columns()
+            return df.drop(columns=list(cols_to_drop))
+        except Exception as e:
+            return e

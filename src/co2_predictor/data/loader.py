@@ -37,7 +37,11 @@ class CO2DataLoader:
 
         Moved from: Section 2, `df = pd.read_csv(DATA_PATH)`.
         """
-        raise NotImplementedError
+        try:
+            df = pd.read_csv(self.data_path)
+            return df
+        except Exception as e:
+            return e
 
     def load_clean(self) -> pd.DataFrame:
         """load_raw() + drop_duplicates().
@@ -47,4 +51,8 @@ class CO2DataLoader:
         Consider logging (not printing) how many rows were dropped --
         useful for a training run log, not for stdout noise.
         """
-        raise NotImplementedError
+        try:
+            df = self.load_raw()
+            df = df.drop_duplicates()
+        except Exception as e:
+            return e

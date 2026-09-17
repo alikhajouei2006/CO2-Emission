@@ -15,11 +15,10 @@ which split is appropriate and how many times to call it.
 from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
 
 METRICS = {
-    "R2": r2_score,
+    "R$^2$": r2_score,
     "MAE": mean_absolute_error,
     "RMSE": root_mean_squared_error,
 }
-# Section 9
 
 
 def evaluate_model(*, model, X, y, metrics: dict = METRICS) -> dict:
@@ -27,4 +26,17 @@ def evaluate_model(*, model, X, y, metrics: dict = METRICS) -> dict:
 
     Moved from: Section 9, `evaluate_model`.
     """
-    raise NotImplementedError
+    try:
+        predicted_y = model.predict(X)
+
+        results = {}
+        for name, metric in metrics.items():
+            results[name] = round(
+                metric(y, predicted_y),
+                2
+            )
+
+        return results
+
+    except Exception as e:
+        return e

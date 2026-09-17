@@ -29,7 +29,6 @@ EXPECTED_COLUMNS = (
     "Transmission",
     "Fuel Type",
 )
-# Section 5 / 1.4 -- the pre-production feature set.
 
 
 class CO2Predictor:
@@ -53,4 +52,8 @@ class CO2Predictor:
         than letting sklearn raise an opaque error three layers deep
         inside the ColumnTransformer.
         """
-        raise NotImplementedError
+        try:
+            prediction = self.pipeline.predict(vehicle_specs)
+            return prediction
+        except Exception as e:
+            return e 

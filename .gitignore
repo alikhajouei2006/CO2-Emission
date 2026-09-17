@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Project-specific
+models/*.joblib
+models/*.pkl
+# Keep the folder itself in git (via models/.gitkeep) but not the large,
+# regenerable fitted-model artifacts -- these should be produced by
+# scripts/run_training.py, not committed as binary blobs.
+
+# Uncomment the line below only if data/raw/*.csv is NOT allowed to be
+# redistributed under the dataset's license (see data/README.md):
+# data/raw/*.csv

@@ -24,6 +24,7 @@ than a notebook if you're not careful.
 
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
 
 
 def add_cylinder_ratio(X: pd.DataFrame, prefix: str = "numeric") -> pd.DataFrame:
@@ -38,7 +39,12 @@ def add_cylinder_ratio(X: pd.DataFrame, prefix: str = "numeric") -> pd.DataFrame
     sklearn's set_config(transform_output="pandas") is active --
     see the note in config.py.
     """
-    raise NotImplementedError
+    try:
+        X = X.copy()
+        X['Cylinder per liter'] = X[f'{prefix}__Cylinders'] / X[f'{prefix}__Engine Size(L)']
+        return X
+    except Exception as e:
+        return e
 
 
 def build_column_preprocessor(
@@ -48,4 +54,27 @@ def build_column_preprocessor(
 
     Moved from: Section 5, `build_preprocessor`.
     """
-    raise NotImplementedError
+    try:
+        categorical_prefix = 'OHE'
+        numerical_prefix = 'numeric'
+        preprocessor = ColumnTransformer(
+            transformers=[
+                (
+                    categorical_prefix,
+                    OneHotEncoder(
+                        handle_unknown='ignore',
+                        sparse_output=False
+                    ),
+                    categorical
+                ),
+                (
+                    numerical_prefix,
+                    'passthrough',
+                    numerical
+                ),
+            ]
+        )
+
+        return preprocessor
+    except Exception as e:
+        return e
