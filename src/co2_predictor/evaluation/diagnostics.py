@@ -18,12 +18,12 @@ def plot_learning_curve(model, X, y, model_name: str, *, cv: int) -> matplotlib.
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.plot(sizes, -train_scores.mean(axis=1), color='blue', label='Train')
     ax.plot(sizes, -validation_scores.mean(axis=1), color='green', label='Validation')
-    ax.set_title(f'Learning Curve - {model_name}')
+    ax.set_title(f'Learning Curve - {model_name.title()}')
     ax.legend()
     plt.tight_layout()
     return fig
 
-def plot_residual(*, model, X, y, model_name: str) -> matplotlib.figure.Figure:
+def plot_residual(*, model, X, y, model_name: str, set_name: str='Train Set') -> matplotlib.figure.Figure:
     predicted_y = model.predict(X)
     error = y - predicted_y
     rmse = np.sqrt(np.mean(error**2))
@@ -40,7 +40,7 @@ def plot_residual(*, model, X, y, model_name: str) -> matplotlib.figure.Figure:
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.scatter(predicted_y, error, c='steelblue')
     ax.axhline(0, c='red', lw=2)
-    ax.set_title(f'Residual Plot - {model_name}', font='serif', fontsize=20, pad=10)
+    ax.set_title(f'Residual Plot - {model_name.title()} ({set_name.title()})', font='serif', fontsize=20, pad=10)
     ax.set_xlabel(r'$y$ $pred$', font='serif', fontsize=14)
     ax.set_ylabel(r'Residual ($y$ - $\hat{y}$)', font='serif', fontsize=14)
     plt.text(
@@ -59,7 +59,7 @@ def plot_residual(*, model, X, y, model_name: str) -> matplotlib.figure.Figure:
     plt.tight_layout()
     return fig   
 
-def plot_parity(*, model, X, y, model_name: str) -> matplotlib.figure.Figure:
+def plot_parity(*, model, X, y, model_name: str, set_name: str='Train Set') -> matplotlib.figure.Figure:
     predicted_y = model.predict(X)
     min_val = min(y.min(), predicted_y.min())
     max_val = max(y.max(), predicted_y.max())
@@ -69,14 +69,14 @@ def plot_parity(*, model, X, y, model_name: str) -> matplotlib.figure.Figure:
     ax.plot([min_val, max_val], [min_val, max_val], c='red', lw=2)
     ax.set_xlabel(r'$y$', font='serif', fontsize=15)
     ax.set_ylabel(r'$\hat{y}$', font='serif', fontsize=15)
-    ax.set_title(f'Parity Plot - {model_name}', font='serif', fontsize=20, pad=10)
+    ax.set_title(f'Parity Plot - {model_name.title()} ({set_name.title()})', font='serif', fontsize=20, pad=10)
     plt.tight_layout()
     return fig
     
 
 
 def plot_feature_importance(
-    *, model, feature_names, model_name: str
+    *, model, feature_names, model_name: str, set_name: str='Train Set'
 ) -> matplotlib.figure.Figure:
     """
     Note: relies on model.named_steps['model'].feature_importances_,
@@ -89,7 +89,7 @@ def plot_feature_importance(
 
     fig, ax = plt.subplots(figsize=(20,20))
     importance.plot.barh(ax=ax)
-    ax.set_title(f'Feature Importance - {model_name}', font='serif', fontsize=20, pad=10)
+    ax.set_title(f'Feature Importance - {model_name.title()} ({set_name.title()})', font='serif', fontsize=20, pad=10)
     ax.set_xlabel("Importance", font='serif', fontsize=15)
     plt.tight_layout()
     return fig
@@ -123,4 +123,14 @@ def compute_permutation_importance(
 
     return perm_importance_df.set_index('Feature', drop=True)
     
-    
+def plot_permutaion(
+        *, permutaion_importance, model_name: str, set_name: str='Train Set'
+    ) -> matplotlib.figure.Figure:
+    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+    permutaion_importance.drop('Std', axis=1).plot(kind='barh', ax=ax[0])
+    ax[0].set_title('Importance', font='serif', fontsize=16)
+    permutaion_importance.drop('Importance', axis=1).plot(kind='barh', ax=ax[1])
+    ax[1].set_title('Standard Deviation ', font='serif', fontsize=16)
+    plt.suptitle(f'Permutaion Importance - {model_name.title()} ({set_name.title()})', font='serif', fontsize=20)
+    plt.tight_layout()
+    return fig
