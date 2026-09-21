@@ -124,13 +124,13 @@ def compute_permutation_importance(
     return perm_importance_df.set_index('Feature', drop=True)
     
 def plot_permutaion(
-        *, permutaion_importance, model_name: str, set_name: str='Train Set'
+        *, permutation_importance, model_name: str, set_name: str='Train Set'
     ) -> matplotlib.figure.Figure:
     fig, ax = plt.subplots(2, 1, figsize=(8, 6))
-    permutaion_importance.drop('Std', axis=1).plot(kind='barh', ax=ax[0])
+    permutation_importance.drop('Std', axis=1).plot(kind='barh', ax=ax[0])
     ax[0].set_title('Importance', font='serif', fontsize=16)
-    permutaion_importance.drop('Importance', axis=1).plot(kind='barh', ax=ax[1])
+    permutation_importance.drop('Importance', axis=1).plot(kind='barh', ax=ax[1])
     ax[1].set_title('Standard Deviation ', font='serif', fontsize=16)
-    plt.suptitle(f'Permutaion Importance - {model_name.title()} ({set_name.title()})', font='serif', fontsize=20)
+    plt.suptitle(f'Permutation Importance - {model_name.title()} ({set_name.title()})', font='serif', fontsize=20)
     plt.tight_layout()
     return fig

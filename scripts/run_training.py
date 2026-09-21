@@ -1,40 +1,112 @@
-"""
-End-to-end training entrypoint. Equivalent to running the entire
-notebook top to bottom (Sections 2 through 12), minus the EDA
-(Section 3) and diagnostics (Section 10) plotting, which are
-analysis-only and belong in a notebook, not in this script.
+from co2_predictor.data.loader import CO2DataLoader
+from co2_predictor.features.selection import FeatureScope
+from co2_predictor.features.engineering import build_column_preprocessor
+from co2_predictor.config import (RANDOM_STATE, TARGET, CV_N_SPLITS, \
+                                      CV_N_REPEATS, N_ITER, initial_configurations, \
+                                      DATA_PATH, TEST_SIZE)
+from co2_predictor.modeling.registry import TUNED_MODEL_REGISTRY
+from co2_predictor.modeling.trainer import HyperparameterTuner
+from co2_predictor.modeling.selector import build_comparison_table, select_final_model
+from co2_predictor.evaluation.metrics import METRICS, evaluate_model
+from co2_predictor.persistence import save_pipeline
+from sklearn.model_selection import train_test_split, RepeatedKFold
 
-Outline (fill in using the classes/functions built above):
+def load_and_prepare_data(*, path):
+    data_loader = CO2DataLoader(path)
+    df = data_loader.load_clean()
+    feature_scope = FeatureScope(
+        redundant_fuel_columns=('Fuel Consumption Comb (mpg)',),
+        high_cardinality_columns=('Model',),
+        inference_unavailable_columns=(
+            'Fuel Consumption City (L/100 km)',
+            'Fuel Consumption Hwy (L/100 km)',
+            'Fuel Consumption Comb (L/100 km)'
+        )
+    )
+    df = feature_scope.apply(df)
+    X = df.drop(columns=TARGET)
+    y = df[TARGET]
+    X_train,X_test, y_train, y_test = train_test_split(
+        X, 
+        y,
+        test_size=TEST_SIZE,
+        stratify=df['Make'],
+        random_state=RANDOM_STATE
+    )
+    numerical_features = X.select_dtypes(include='number').columns.to_list()
+    categorical_features = X.select_dtypes(include='object').columns.to_list()
+    preprocessor = build_column_preprocessor(
+        numerical=numerical_features,
+        categorical=categorical_features
+    )
+    return X_train, X_test, y_train, y_test, preprocessor
 
-    1.  Load config (co2_predictor.config)
-    2.  data.loader.CO2DataLoader -> load_clean()                 [Section 2]
-    3.  features.selection.FeatureScope.apply()                   [1.4, 3.5.2, 3.6.1, 3.6.2]
-    4.  train_test_split(..., stratify=df['Make'])                [Section 5]
-    5.  features.engineering.build_column_preprocessor()          [Section 5]
-    6.  modeling.pipeline_factory.build_pipeline()                [Section 5]
-    7.  modeling.trainer.HyperparameterTuner.search_all()         [Section 8]
-    8.  modeling.selector.build_comparison_table()                [Sections 9, 11.1]
-        -- train + CV only, X_test/y_test must not appear yet.
-    9.  modeling.selector.select_final_model()                    [Section 11.2-11.3]
-    10. evaluation.metrics.evaluate_model() on X_test/y_test,     [Section 12.1-12.2]
-        called EXACTLY ONCE, only on the winning model.
-    11. persistence.save_pipeline() the winning fitted pipeline.
+def train_candidates(*, X_train, y_train, preprocessor):
+    rkf = RepeatedKFold(
+        n_repeats=CV_N_REPEATS,
+        n_splits=CV_N_SPLITS, 
+        random_state=RANDOM_STATE
+    )
+    hyperparameter_tuner = HyperparameterTuner(
+        cv=rkf,
+        n_iter=N_ITER,
+        random_state=RANDOM_STATE
+    )
 
-Diagnostics (Section 10, 12.3-12.5) and EDA (Section 3) are
-deliberately NOT called from this script. Run them separately, e.g.
-from a `notebooks/diagnostics_report.ipynb` that imports
-evaluation.diagnostics and loads the artifacts this script produced.
+    search_results = hyperparameter_tuner.search_all(
+        registry=TUNED_MODEL_REGISTRY,
+        preprocessor=preprocessor,
+        X=X_train,
+        y=y_train
+    )
 
-Consider argparse for: --data-path, --output-dir, --n-iter (search
-budget), and a --skip-search flag that loads previously persisted
-search results instead of re-running ~40 minutes of
-RandomizedSearchCV (see the note in modeling/trainer.py).
-"""
+    return search_results
 
+def select_and_report(*, search_results, X_train, y_train, metrics):
+    comparison_table = build_comparison_table(
+        fitted_searches=search_results,
+        X_train=X_train,
+        y_train=y_train,
+        metrics=metrics
+    )
+    print(comparison_table)
+    final_model_name = select_final_model(comparison_table=comparison_table)
+    return final_model_name
+
+def evaluate_final(*, final_model, X_test, y_test, metrics):
+    eval_results = evaluate_model(
+        model=final_model, 
+        X=X_test, 
+        y=y_test, 
+        metrics=metrics
+    )
+    return eval_results
 
 def main() -> None:
-    raise NotImplementedError
+    initial_configurations()
+    X_train, X_test, y_train, y_test, preprocessor = load_and_prepare_data(path=DATA_PATH)
+    search_results = train_candidates(
+        X_train=X_train, 
+        y_train=y_train, 
+        preprocessor=preprocessor
+    )
+    final_model_name = select_and_report(
+        search_results=search_results,
+        X_train=X_train,
+        y_train=y_train,
+        metrics=METRICS
+    )
+    final_model = search_results[final_model_name].best_estimator_
+    final_evaluation_results = evaluate_final(
+        final_model=final_model,
+        X_test=X_test, 
+        y_test=y_test, 
+        metrics=METRICS
+    )
+    for metric, res in final_evaluation_results.items():
+        print(f'{metric}: {res}')
 
+    save_pipeline(final_model, "models/xgb_pipeline.joblib")
 
 if __name__ == "__main__":
     main()

@@ -23,7 +23,7 @@ def build_comparison_table(
         results[name]['Mean CV RMSE'] = mean_cv_score
         results[name]['RMSE Gap'] = rmse_gap
 
-    return pd.DataFrame(results)
+    return pd.DataFrame(results).T
 
 def select_final_model(comparison_table: pd.DataFrame) -> str:
     return comparison_table['Mean CV RMSE'].idxmin()
