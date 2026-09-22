@@ -64,7 +64,7 @@ The most influential feature by permutation importance is `Engine Size(L)`, foll
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/CO2-Emission.git
+git clone https://github.com/alikhajouei2006/CO2-Emission
 cd CO2-Emission
 pip install -e .
 ```
@@ -136,4 +136,4 @@ This repository's code is licensed under the MIT License — see [LICENSE](LICEN
 ## Author
 
 **Ali Khajouei**
-[GitHub](https://github.com/alikhajouei2006/) · [LinkedIn](https://www.linkedin.com/in/ali-khajouei)
+[GitHub](https://github.com/alikhajouei2006/) · [LinkedIn](https://www.linkedin.com/in/ali-khajouei/)
