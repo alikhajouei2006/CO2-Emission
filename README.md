@@ -136,4 +136,4 @@ This repository's code is licensed under the MIT License — see [LICENSE](LICEN
 ## Author
 
 **Ali Khajouei**
-[GitHub](https://github.com/alikhajouei2006/) · [LinkedIn](https://www.linkedin.com/in/ali-khajouei/)
+[GitHub](https://github.com/alikhajouei2006/) · [LinkedIn](https://www.linkedin.com/in/ali-khajouei-81730135b/)
