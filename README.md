@@ -1,37 +1,35 @@
 # CO2 Emission Prediction (Pre-Production Scenario)
 
-Predicting a vehicle's CO2 emissions (g/km) from its **declared specifications alone** — before it is physically built and fuel-consumption tested — using tree-based regression models trained on the [CO2 Emission by Vehicles](#dataset) dataset.
+This project predicts a vehicle's CO2 emissions (g/km) from its declared specifications alone, before a prototype exists and before any fuel-consumption test has been run. The models are tree-based regressors trained on the [CO2 Emission by Vehicles](#dataset) dataset.
 
-### Highlights
+The test set was used once, for the final model. Model comparison and selection used only the training data and cross-validation.
 
-- **Leakage-aware feature scope**: fuel-consumption features (correlation ≈0.9+ with the target) are deliberately excluded, because they are only measurable _after_ a physical prototype exists — using them would leak post-production information into a pre-production task. An earlier iteration that included them reached a near-perfect but meaningless R² ≈ 0.99; see [Problem Framing](#problem-framing).
-- **Disciplined train/test separation**: the test set is touched exactly once, for the final model only. Every model comparison and selection decision (Sections 9–11 of the notebook) is based purely on training data and cross-validation — never on test metrics.
-- **Every modeling decision is justified inline**, not just stated — including the ones that look counterintuitive at first (e.g. why the categorical feature with the _highest_ Mutual Information score was still dropped).
+An earlier version of this project used the fuel-consumption columns and reached R² ≈ 0.99. Those columns are measured after a vehicle is built and tested, so they would not be available at prediction time, and the score said little about the model. The current version drops them (see [Problem framing](#problem-framing)).
 
-## Table of Contents
+## Contents
 
-- [Problem Framing](#problem-framing)
+- [Problem framing](#problem-framing)
 - [Results](#results)
-- [Repository Structure](#repository-structure)
+- [Repository structure](#repository-structure)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Testing](#testing)
-- [Methodology Summary](#methodology-summary)
+- [Method](#method)
 - [Limitations](#limitations)
-- [Future Work](#future-work)
+- [Future work](#future-work)
 - [Dataset](#dataset)
 - [License](#license)
 - [Author](#author)
 
-## Problem Framing
+## Problem framing
 
-This project simulates a **pre-production** deployment scenario: predicting CO2 emissions using only the vehicle specifications that are known before physical prototyping and standardized fuel-consumption testing (`Make`, `Vehicle Class`, `Engine Size`, `Cylinders`, `Transmission`, `Fuel Type`).
+The task is to estimate CO2 emissions using only what is known before a vehicle is built: `Make`, `Vehicle Class`, `Engine Size(L)`, `Cylinders`, `Transmission` and `Fuel Type`.
 
-Fuel-consumption features (City/Highway/Combined), while highly correlated with the target, are only measurable _after_ a physical test and are therefore excluded from the model — using them would leak post-production information into a pre-production prediction task. An earlier iteration of this project that included these features reached a near-perfect R² (~0.99); inspecting feature importance revealed this was driven by data leakage rather than genuine predictive signal, which motivated the current framing. See `notebook/CO2 Emission.ipynb`, Section 1.4, for the full discussion.
+The fuel-consumption columns (city, highway, combined) correlate with the target at about 0.9 or higher, but they can only be measured on a physical vehicle. In the first version of the project the model with these columns scored R² ≈ 0.99. Checking feature importance showed that nearly all of that came from the fuel columns, so they were removed. Section 1.4 of `notebook/CO2 Emission.ipynb` has the full discussion.
 
 ## Results
 
-Final model: **XGBoost Regressor**, selected from four tuned candidates (Random Forest, XGBoost, Extra Trees, Decision Tree) based on cross-validated RMSE on the training set. The test set was touched exactly once, for this model only.
+The final model is an XGBoost regressor. It was chosen from four tuned candidates (Random Forest, XGBoost, Extra Trees, Decision Tree) by cross-validated RMSE on the training set.
 
 | Metric      | Train | Test  |
 | ----------- | ----- | ----- |
@@ -39,59 +37,59 @@ Final model: **XGBoost Regressor**, selected from four tuned candidates (Random 
 | MAE (g/km)  | 7.49  | 9.31  |
 | RMSE (g/km) | 10.67 | 13.16 |
 
-The most influential feature by permutation importance is `Engine Size(L)`, followed by `Vehicle Class` and `Cylinders` — consistent with the physical relationship between engine displacement and fuel burned.
+Permutation importance ranks `Engine Size(L)` first, then `Vehicle Class` and `Cylinders`.
 
 <p align="center">
-  <img src="figures/final-parity-plot-xgb.png" width="32%" alt="Final model parity plot (predicted vs. actual CO2 emissions on the test set)">
-  <img src="figures/final-residual-plot-xgb.png" width="32%" alt="Final model residual plot on the test set">
+  <img src="figures/final-parity-plot-xgb.png" width="32%" alt="Predicted vs. actual CO2 emissions on the test set">
+  <img src="figures/final-residual-plot-xgb.png" width="32%" alt="Residual plot on the test set">
   <img src="figures/final-permutation-importance-xgb.png" width="32%" alt="Permutation importance of the final model on the test set">
 </p>
 
-## Repository Structure
+## Repository structure
 
 ```
-├── data/                     # Raw dataset (see data/README.md for source/license)
-├── notebook/                 # End-to-end exploratory notebook (EDA, modeling, diagnostics)
-├── reports/                  # Rendered HTML export of the notebook
-├── src/co2_predictor/        # Modular, OOP implementation used by scripts/
-├── scripts/                  # Training entrypoint (scripts/run_training.py)
-├── models/                   # Persisted fitted pipeline (created by scripts/run_training.py, not committed)
-├── figures/                  # Selected plots referenced in this README
-├── tests/                    # Unit tests for src/co2_predictor (run with `pytest`)
-├── pyproject.toml            # Package metadata and dependencies
+├── data/                     # Raw dataset (source and license in data/README.md)
+├── notebook/                 # Notebook with the EDA, modeling and diagnostics
+├── reports/                  # HTML export of the notebook
+├── src/co2_predictor/        # Package used by the scripts
+├── scripts/                  # Training entry point (scripts/run_training.py)
+├── models/                   # Fitted pipeline, created by run_training.py (not committed)
+├── figures/                  # Plots used in this README
+├── tests/                    # Unit tests for src/co2_predictor
+├── pyproject.toml
 └── LICENSE
 ```
 
 ## Installation
 
+Python 3.10 or newer is required.
+
 ```bash
 git clone https://github.com/alikhajouei2006/CO2-Emission
 cd CO2-Emission
-pip install -e .            # runtime dependencies
-pip install -e ".[dev]"     # optional: adds pytest and Jupyter
+pip install -e .
 ```
 
-Requires Python 3.10 or newer.
+To also install pytest and Jupyter, use `pip install -e ".[dev]"`.
 
 ## Usage
 
-**Reproduce the full analysis:** open `notebook/CO2 Emission.ipynb`.
+To go through the full analysis, open `notebook/CO2 Emission.ipynb`.
 
-**Retrain the model from the command line:**
+To retrain from the command line:
 
 ```bash
 python scripts/run_training.py
 ```
 
-This tunes all candidate models, selects the final one by cross-validated RMSE, evaluates it once on the held-out test set, and saves the fitted pipeline to `models/<final model name>_pipeline.joblib` (for the current data this is `models/XGB_pipeline.joblib`). The `models/` folder is not committed, so **run training once before using the predictor below**.
+The script tunes all candidates, picks the final model, evaluates it once on the test set, and saves the fitted pipeline to `models/<model name>_pipeline.joblib`. With the current data that file is `models/XGB_pipeline.joblib`. Since `models/` is not committed, run training once before using the predictor.
 
-**Predict on new vehicle specifications:**
+To predict for a new vehicle:
 
 ```python
 from co2_predictor.inference.predictor import CO2Predictor
 import pandas as pd
 
-# Created by `python scripts/run_training.py`
 predictor = CO2Predictor(model_path="models/XGB_pipeline.joblib")
 
 new_vehicle = pd.DataFrame([{
@@ -113,43 +111,43 @@ pip install -e ".[dev]"
 pytest
 ```
 
-The tests cover duplicate removal, the feature-scope guard (no fuel-consumption columns reach the model), the derived `Cylinders / Engine Size` feature, handling of unseen categories at inference time, and saving/loading the fitted pipeline. They use a small in-memory dataset and a lightweight model, so they run in seconds and do not retrain the full search.
+The tests check duplicate removal, that no fuel-consumption column reaches the model, the `Cylinders / Engine Size` feature, unseen categories at prediction time, and saving and loading the pipeline. They run on a small in-memory dataset with a simple model, so they finish in seconds and do not rerun the hyperparameter search.
 
-## Methodology Summary
+## Method
 
-1. **Data cleaning** — duplicate removal (~15% of raw records were exact duplicates).
-2. **EDA** — target distribution, VIF, ANOVA, Mutual Information; used to justify every feature-scope decision below, not just to describe the data.
-3. **Feature scope** — dropped `Model` (high cardinality: 2,053 unique values for 6,282 records) and all fuel-consumption columns (pre-production framing, see above).
-4. **Feature engineering** — a single derived feature (`Cylinders / Engine Size`) was tested against a rejected alternative (`Cylinders × Engine Size`) via cross-validation before being added to the final pipeline.
-5. **Model comparison** — four tree-based models, each tuned with `RandomizedSearchCV` over a shared `RepeatedKFold` strategy (5 folds × 3 repeats); linear baselines were evaluated but underperformed substantially.
-6. **Model selection & evaluation** — selection based entirely on train/CV metrics; the test set is used exactly once, at the end, for the selected model only.
+1. Data cleaning. About 15% of the raw rows were exact duplicates and were removed.
+2. EDA. Target distribution, VIF, ANOVA and mutual information were used to decide which columns to keep.
+3. Feature scope. `Model` was dropped because it has 2,053 unique values for 6,282 records. All fuel-consumption columns were dropped for the reason given above.
+4. Feature engineering. One derived feature, `Cylinders / Engine Size`, was added. A competing feature, `Cylinders × Engine Size`, was tested with cross-validation and rejected.
+5. Model comparison. Four tree-based models were tuned with `RandomizedSearchCV` on a shared `RepeatedKFold` (5 folds, 3 repeats). Linear baselines scored much lower.
+6. Selection and evaluation. The final model was chosen from training and cross-validation metrics. The test set was used once, at the end.
 
-Full reasoning for every decision above — including the ones that trade off signal for robustness — is documented inline in `notebook/CO2 Emission.ipynb`.
+The notebook gives the reasoning behind each step, including the cases where a column with a high score was left out.
 
 ## Limitations
 
-- **Feature scope**: `Model` was excluded despite having the highest Mutual Information among categorical features, due to its high cardinality relative to dataset size.
-- **Underrepresented manufacturers**: some manufacturers (e.g., Bugatti, SRT) have as few as 2 records; performance for these cannot be reliably estimated from the current test set.
-- **Domain coverage**: the dataset includes only vehicles with a combustion-based fuel type (gasoline, diesel, ethanol, natural gas), including conventional (non-plug-in) hybrids such as gasoline-electric hybrids, which are tested and reported identically to non-hybrid vehicles. It does not include battery-electric (BEV) or plug-in hybrid (PHEV) vehicles, whose emissions profile cannot be captured by the same fuel-consumption-based measurement framework. Results should not be extrapolated to these powertrain types.
-- **Single train/test split**: reported test metrics reflect one specific random split rather than a distribution across multiple splits.
+- `Model` was excluded even though it has the highest mutual information among the categorical columns, because its cardinality is high relative to the dataset size.
+- Some manufacturers (Bugatti, SRT) have only 2 records, so performance on them cannot be estimated reliably.
+- The data covers vehicles with combustion fuel types (gasoline, diesel, ethanol, natural gas), including conventional hybrids. It has no battery-electric or plug-in hybrid vehicles, and the model should not be used for them.
+- The reported test metrics come from one random split, not from repeated splits.
 
-## Future Work
+## Future work
 
-- Explore target/frequency encoding for `Model` to recover predictive signal without the dimensionality cost of one-hot encoding.
-- Extend to electric and hybrid (BEV/PHEV) vehicles, which require a different measurement framework than the one used here, to assess generalization beyond the current dataset's scope.
-- Evaluate across multiple random splits/seeds to obtain a confidence interval on test performance.
-- Expand `tests/` coverage (e.g., the tuning and model-selection code) and add CI (GitHub Actions) to run tests on every push.
-- Add a CLI argument to `scripts/run_training.py` for overriding the dataset path (currently fixed via `config.py`).
+- Try target or frequency encoding for `Model`, to recover its signal without a large one-hot encoding.
+- Repeat the evaluation over several seeds to get a confidence interval on test performance.
+- Add tests for the tuning and selection code, and run tests on each push with GitHub Actions.
+- Let `scripts/run_training.py` take the dataset path as an argument. It is currently set in `config.py`.
+- Look at electric and plug-in hybrid vehicles, which need a different measurement framework.
 
 ## Dataset
 
-[CO2 Emission by Vehicles](https://www.kaggle.com/datasets/debajyotipodder/co2-emission-by-vehicles) (Kaggle), originally compiled from [Government of Canada Open Data](https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64). See [`data/README.md`](data/README.md) for the exact source link, retrieval date, license terms, and a reference table decoding the dataset's column abbreviations (fuel type, transmission, and model codes).
+[CO2 Emission by Vehicles](https://www.kaggle.com/datasets/debajyotipodder/co2-emission-by-vehicles) (Kaggle), compiled from [Government of Canada Open Data](https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64). `data/README.md` has the source link, retrieval date, license terms and a table of the column abbreviations.
 
 ## License
 
-This repository's code is licensed under the MIT License — see [LICENSE](LICENSE). The dataset itself is governed by its own, separate license — see [`data/README.md`](data/README.md).
+The code is released under the MIT License (see [LICENSE](LICENSE)). The dataset has its own license, described in [`data/README.md`](data/README.md).
 
 ## Author
 
-**Ali Khajouei**
+Ali Khajouei  
 [GitHub](https://github.com/alikhajouei2006/) · [LinkedIn](https://www.linkedin.com/in/ali-khajouei-81730135b/)
