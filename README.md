@@ -131,14 +131,6 @@ The notebook gives the reasoning behind each step, including the cases where a c
 - The data covers vehicles with combustion fuel types (gasoline, diesel, ethanol, natural gas), including conventional hybrids. It has no battery-electric or plug-in hybrid vehicles, and the model should not be used for them.
 - The reported test metrics come from one random split, not from repeated splits.
 
-## Future work
-
-- Try target or frequency encoding for `Model`, to recover its signal without a large one-hot encoding.
-- Repeat the evaluation over several seeds to get a confidence interval on test performance.
-- Add tests for the tuning and selection code, and run tests on each push with GitHub Actions.
-- Let `scripts/run_training.py` take the dataset path as an argument. It is currently set in `config.py`.
-- Look at electric and plug-in hybrid vehicles, which need a different measurement framework.
-
 ## Dataset
 
 [CO2 Emission by Vehicles](https://www.kaggle.com/datasets/debajyotipodder/co2-emission-by-vehicles) (Kaggle), compiled from [Government of Canada Open Data](https://open.canada.ca/data/en/dataset/98f1a129-f628-4ce4-b24d-6f16bf24dd64). `data/README.md` has the source link, retrieval date, license terms and a table of the column abbreviations.
