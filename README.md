@@ -15,6 +15,7 @@ Predicting a vehicle's CO2 emissions (g/km) from its **declared specifications a
 - [Repository Structure](#repository-structure)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Testing](#testing)
 - [Methodology Summary](#methodology-summary)
 - [Limitations](#limitations)
 - [Future Work](#future-work)
@@ -54,9 +55,9 @@ The most influential feature by permutation importance is `Engine Size(L)`, foll
 ├── reports/                  # Rendered HTML export of the notebook
 ├── src/co2_predictor/        # Modular, OOP implementation used by scripts/
 ├── scripts/                  # Training entrypoint (scripts/run_training.py)
-├── models/                   # Persisted fitted pipeline (generated, not committed)
+├── models/                   # Persisted fitted pipeline (created by scripts/run_training.py, not committed)
 ├── figures/                  # Selected plots referenced in this README
-├── tests/                    # Unit tests for src/co2_predictor
+├── tests/                    # Unit tests for src/co2_predictor (run with `pytest`)
 ├── pyproject.toml            # Package metadata and dependencies
 └── LICENSE
 ```
@@ -66,8 +67,11 @@ The most influential feature by permutation importance is `Engine Size(L)`, foll
 ```bash
 git clone https://github.com/alikhajouei2006/CO2-Emission
 cd CO2-Emission
-pip install -e .
+pip install -e .            # runtime dependencies
+pip install -e ".[dev]"     # optional: adds pytest and Jupyter
 ```
+
+Requires Python 3.10 or newer.
 
 ## Usage
 
@@ -79,13 +83,16 @@ pip install -e .
 python scripts/run_training.py
 ```
 
+This tunes all candidate models, selects the final one by cross-validated RMSE, evaluates it once on the held-out test set, and saves the fitted pipeline to `models/<final model name>_pipeline.joblib` (for the current data this is `models/XGB_pipeline.joblib`). The `models/` folder is not committed, so **run training once before using the predictor below**.
+
 **Predict on new vehicle specifications:**
 
 ```python
 from co2_predictor.inference.predictor import CO2Predictor
 import pandas as pd
 
-predictor = CO2Predictor(model_path="models/xgb_pipeline.joblib")
+# Created by `python scripts/run_training.py`
+predictor = CO2Predictor(model_path="models/XGB_pipeline.joblib")
 
 new_vehicle = pd.DataFrame([{
     "Make": "TOYOTA",
@@ -98,6 +105,15 @@ new_vehicle = pd.DataFrame([{
 
 predictor.predict(new_vehicle)
 ```
+
+## Testing
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+The tests cover duplicate removal, the feature-scope guard (no fuel-consumption columns reach the model), the derived `Cylinders / Engine Size` feature, handling of unseen categories at inference time, and saving/loading the fitted pipeline. They use a small in-memory dataset and a lightweight model, so they run in seconds and do not retrain the full search.
 
 ## Methodology Summary
 
@@ -122,7 +138,7 @@ Full reasoning for every decision above — including the ones that trade off si
 - Explore target/frequency encoding for `Model` to recover predictive signal without the dimensionality cost of one-hot encoding.
 - Extend to electric and hybrid (BEV/PHEV) vehicles, which require a different measurement framework than the one used here, to assess generalization beyond the current dataset's scope.
 - Evaluate across multiple random splits/seeds to obtain a confidence interval on test performance.
-- Expand `tests/` coverage and add CI (GitHub Actions) to run tests on every push.
+- Expand `tests/` coverage (e.g., the tuning and model-selection code) and add CI (GitHub Actions) to run tests on every push.
 - Add a CLI argument to `scripts/run_training.py` for overriding the dataset path (currently fixed via `config.py`).
 
 ## Dataset

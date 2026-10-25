@@ -118,9 +118,9 @@ def main() -> None:
         print(f'{metric}: {res}')
 
     print('Saving final model...')
-    save_path = r"models/xgb_pipeline.joblib"
+    save_path = r"models/{}_pipeline.joblib".format(final_model_name)
     save_pipeline(final_model, save_path)
-    print('Final model were successfully saved at: {save_path}')
+    print(f'Final model were successfully saved at: {save_path}')
 
 if __name__ == "__main__":
     main()
